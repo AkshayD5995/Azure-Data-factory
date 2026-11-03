@@ -1,0 +1,1479 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DeshmukhFactory"
+		},
+		"ADLS_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS'"
+		},
+		"ADLS_LS_HEALTHCARE_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS_HEALTHCARE'"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorage1'"
+		},
+		"AzureSqlDatabase1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabase1'"
+		},
+		"AzureSqlDatabaseforincreamental_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabaseforincreamental'"
+		},
+		"LS_SQLDB_SRC_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQLDB_SRC'"
+		},
+		"SQL_ls_HEALTHCARE_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SQL_ls_HEALTHCARE'"
+		},
+		"azureDB_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'azureDB'"
+		},
+		"healthcare_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'healthcare'"
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://practise.dfs.core.windows.net/"
+		},
+		"ADLS_LS_HEALTHCARE_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://projecthealthcare.dfs.core.windows.net/"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://eatsstorage1.dfs.core.windows.net/"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azuredbserverdb.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "db_practise"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshu"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "eatsuber.database.windows.net"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "uber"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "CloudSA94fab8ec"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "eatsuber.database.windows.net"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "uber"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "CloudSA94fab8ec"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().database}"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		},
+		"azureDB_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"azureDB_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "healthA"
+		},
+		"azureDB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		},
+		"healthcare_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"healthcare_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().DBName}"
+		},
+		"healthcare_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Meatadat_Driven_Hospital_Load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get_Hospital_Config",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "\n SELECT HospitalName, ContainerName, FolderPath, FileName, DatabaseName, SchemaName, TableName\nFROM dbo.HospitalFileConfig\nWHERE IsActive = 1\n  AND HospitalName = '@{pipeline().parameters.hospital}'\nORDER BY LoadOrder",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "healthcare_datset_forlookup",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get_Hospital_Config",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get_Hospital_Config').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"writeBehavior": "insert",
+											"sqlWriterUseTableLock": false,
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "sourseCSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@item().ContainerName",
+													"type": "Expression"
+												},
+												"fileName": {
+													"value": "@item().FileName",
+													"type": "Expression"
+												},
+												"folderpath": {
+													"value": "@item().FolderPath",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingDB",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": {
+													"value": "@item().Schemaname",
+													"type": "Expression"
+												},
+												"table": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												},
+												"database": {
+													"value": "@item().DatabaseName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"hospital": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-26T11:46:17Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/healthcare_datset_forlookup')]",
+				"[concat(variables('factoryId'), '/datasets/sourseCSV')]",
+				"[concat(variables('factoryId'), '/datasets/landingDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/get_metadata')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "AzureSqlmetadat",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "dbo",
+									"table": "customers"
+								}
+							},
+							"fieldList": [
+								"columnCount"
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-21T09:59:45Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureSqlmetadat')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Hwm_date",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "DelimitedForHWM",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "LookupFor_highest_Date",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Hwm_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "Select MAX(updated_at) AS LAST_DATE from dbo.Customers",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "LookupFor_highest_Date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "@concat(\n'SELECT * FROM DBO.CUSTOMERS WHERE UPDATED_AT > CONVERT(datetime2, ''',\nactivity('Hwm_date').output.firstRow.Prop_0,\n''', 121) AND UPDATED_AT <= CONVERT(datetimeoffset, ''',\nactivity('LookupFor_highest_Date').output.firstRow.LAST_DATE,\n''', 127)'\n)",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "csv_GENERICDATASET",
+								"type": "DatasetReference",
+								"parameters": {
+									"FILE_SYSTEM": "csv",
+									"CONTAINER": "bronze",
+									"FILE_NAME": "CUSTOMER"
+								}
+							}
+						]
+					},
+					{
+						"name": "Watermark updat",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Copy data1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "@concat(\n    'SELECT CONVERT(datetimeoffset, ''',\n    activity('LookupFor_highest_Date').output.firstRow.LAST_DATE,\n    ''', 127)'\n)",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DelimitedForHWM",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-21T09:59:45Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DelimitedForHWM')]",
+				"[concat(variables('factoryId'), '/datasets/AzureSqlHighest_date')]",
+				"[concat(variables('factoryId'), '/datasets/csv_GENERICDATASET')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LookupfOR EACH TABLE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT DISTINCT \r\n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''), CHAR(10), '')) AS CountryRegion, \r\n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, 'yyyy-MM'), CHAR(13), ''), CHAR(10), '')) AS MONTHFOLDER\r\nFROM SalesLT.SalesOrderHeader H\r\nJOIN SalesLT.CustomerAddress CA ON CA.CustomerID = H.CustomerID\r\nJOIN SalesLT.Address A ON A.AddressID = CA.AddressID\r\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlTB",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LookupfOR EACH TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LookupfOR EACH TABLE').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT \n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER,\n    H.SalesOrderID,\n    H.CustomerID\nFROM SalesLT.SalesOrderHeader AS H\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().MONTHFOLDER\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '.csv')\r\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Copy data1_orderscsv",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT DISTINCT \n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''''), CHAR(10), '''')) AS CountryRegion, \n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, ''yyyy-MM''), CHAR(13), ''''), CHAR(10), '''')) AS MONTHFOLDER,\n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_orders.csv')\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Copy data1_order_detailscsv",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT DISTINCT \n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID,\n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_ordersDetails.csv')\n\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"SCHEMA": {
+						"type": "string"
+					},
+					"TABLE": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-25T14:27:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTB')]",
+				"[concat(variables('factoryId'), '/datasets/landingcsv')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlHighest_date')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQLDB_SRC",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQLDB_SRC')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "Address"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlmetadat')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabaseforincreamental",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema": {
+						"type": "string",
+						"defaultValue": "dbo"
+					},
+					"table": {
+						"type": "string",
+						"defaultValue": "customers"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabaseforincreamental')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedForHWM')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "hw.tex",
+						"fileSystem": "watermark"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": false,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/HospDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SQL_ls_HEALTHCARE",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SQL_ls_HEALTHCARE')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"folder": {
+						"type": "string"
+					},
+					"file": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().file",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": false,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ADLS_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/csv_GENERICDATASET')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FILE_SYSTEM": {
+						"type": "string",
+						"defaultValue": "CSV"
+					},
+					"CONTAINER": {
+						"type": "string",
+						"defaultValue": "BRONZE"
+					},
+					"FILE_NAME": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat(dataset().FILE_NAME,'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat(dataset().CONTAINER, dataset().FILE_SYSTEM)",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().CONTAINER",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/healthcare_datset_forlookup')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "healthcare",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/healthcare')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/landingDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "healthcare",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema": {
+						"type": "string"
+					},
+					"table": {
+						"type": "string"
+					},
+					"database": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/healthcare')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/landingcsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"folder": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": "landing"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ADLS_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sourseCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS_HEALTHCARE",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"fileName": {
+						"type": "string"
+					},
+					"folderpath": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folderpath",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ADLS_LS_HEALTHCARE')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ADLS_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ADLS_LS_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('ADLS_LS_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ADLS_LS_HEALTHCARE')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ADLS_LS_HEALTHCARE_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('ADLS_LS_HEALTHCARE_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDataLakeStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDatabase1_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabaseforincreamental')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_database')]",
+					"encrypt": "optional",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDatabaseforincreamental_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQLDB_SRC')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_SQLDB_SRC_properties_typeProperties_server')]",
+					"database": "[parameters('LS_SQLDB_SRC_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_SQLDB_SRC_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_SQLDB_SRC_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SQL_ls_HEALTHCARE')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"database": {
+						"type": "string",
+						"defaultValue": "hospA"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_server')]",
+					"database": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('SQL_ls_HEALTHCARE_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/azureDB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('azureDB_properties_typeProperties_server')]",
+					"database": "[parameters('azureDB_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('azureDB_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('azureDB_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/healthcare')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('healthcare_properties_typeProperties_server')]",
+					"database": "[parameters('healthcare_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('healthcare_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('healthcare_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				},
+				"managedVirtualNetwork": {
+					"type": "ManagedVirtualNetworkReference",
+					"referenceName": "default"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/default')]",
+			"type": "Microsoft.DataFactory/factories/managedVirtualNetworks",
+			"apiVersion": "2018-06-01",
+			"properties": {},
+			"dependsOn": []
+		}
+	]
+}

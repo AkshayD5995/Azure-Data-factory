@@ -1,0 +1,99 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "DeshmukhFactory"
+		},
+		"ADLS_LS_accountKey": {
+			"value": ""
+		},
+		"ADLS_LS_HEALTHCARE_accountKey": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
+		"AzureSqlDatabase1_password": {
+			"value": ""
+		},
+		"AzureSqlDatabaseforincreamental_password": {
+			"value": ""
+		},
+		"LS_SQLDB_SRC_password": {
+			"value": ""
+		},
+		"SQL_ls_HEALTHCARE_password": {
+			"value": ""
+		},
+		"azureDB_password": {
+			"value": ""
+		},
+		"healthcare_password": {
+			"value": ""
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"value": "https://practise.dfs.core.windows.net/"
+		},
+		"ADLS_LS_HEALTHCARE_properties_typeProperties_url": {
+			"value": "https://projecthealthcare.dfs.core.windows.net/"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://eatsstorage1.dfs.core.windows.net/"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"value": "azuredbserverdb.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"value": "db_practise"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"value": "akshu"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_server": {
+			"value": "eatsuber.database.windows.net"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_database": {
+			"value": "uber"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_userName": {
+			"value": "CloudSA94fab8ec"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_server": {
+			"value": "eatsuber.database.windows.net"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_database": {
+			"value": "uber"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_userName": {
+			"value": "CloudSA94fab8ec"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_server": {
+			"value": "serverhealth.database.windows.net"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_database": {
+			"value": "@{linkedService().database}"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_userName": {
+			"value": "akshay"
+		},
+		"azureDB_properties_typeProperties_server": {
+			"value": "serverhealth.database.windows.net"
+		},
+		"azureDB_properties_typeProperties_database": {
+			"value": "healthA"
+		},
+		"azureDB_properties_typeProperties_userName": {
+			"value": "akshay"
+		},
+		"healthcare_properties_typeProperties_server": {
+			"value": "serverhealth.database.windows.net"
+		},
+		"healthcare_properties_typeProperties_database": {
+			"value": "@{linkedService().DBName}"
+		},
+		"healthcare_properties_typeProperties_userName": {
+			"value": "akshay"
+		}
+	}
+}

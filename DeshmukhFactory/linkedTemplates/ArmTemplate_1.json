@@ -1,0 +1,788 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DeshmukhFactory"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/landingcsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"folder": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": "landing"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sourseCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS_HEALTHCARE",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"fileName": {
+						"type": "string"
+					},
+					"folderpath": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folderpath",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Meatadat_Driven_Hospital_Load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get_Hospital_Config",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "\n SELECT HospitalName, ContainerName, FolderPath, FileName, DatabaseName, SchemaName, TableName\nFROM dbo.HospitalFileConfig\nWHERE IsActive = 1\n  AND HospitalName = '@{pipeline().parameters.hospital}'\nORDER BY LoadOrder",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "healthcare_datset_forlookup",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get_Hospital_Config",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get_Hospital_Config').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"writeBehavior": "insert",
+											"sqlWriterUseTableLock": false,
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "sourseCSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@item().ContainerName",
+													"type": "Expression"
+												},
+												"fileName": {
+													"value": "@item().FileName",
+													"type": "Expression"
+												},
+												"folderpath": {
+													"value": "@item().FolderPath",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingDB",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema": {
+													"value": "@item().Schemaname",
+													"type": "Expression"
+												},
+												"table": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												},
+												"database": {
+													"value": "@item().DatabaseName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"hospital": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-26T11:46:17Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sourseCSV')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/get_metadata')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "AzureSqlmetadat",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema": "dbo",
+									"table": "customers"
+								}
+							},
+							"fieldList": [
+								"columnCount"
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-21T09:59:45Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Hwm_date",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "DelimitedForHWM",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "LookupFor_highest_Date",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Hwm_date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "Select MAX(updated_at) AS LAST_DATE from dbo.Customers",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "LookupFor_highest_Date",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "@concat(\n'SELECT * FROM DBO.CUSTOMERS WHERE UPDATED_AT > CONVERT(datetime2, ''',\nactivity('Hwm_date').output.firstRow.Prop_0,\n''', 121) AND UPDATED_AT <= CONVERT(datetimeoffset, ''',\nactivity('LookupFor_highest_Date').output.firstRow.LAST_DATE,\n''', 127)'\n)",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "csv_GENERICDATASET",
+								"type": "DatasetReference",
+								"parameters": {
+									"FILE_SYSTEM": "csv",
+									"CONTAINER": "bronze",
+									"FILE_NAME": "CUSTOMER"
+								}
+							}
+						]
+					},
+					{
+						"name": "Watermark updat",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Copy data1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "@concat(\n    'SELECT CONVERT(datetimeoffset, ''',\n    activity('LookupFor_highest_Date').output.firstRow.LAST_DATE,\n    ''', 127)'\n)",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "AzureSqlHighest_date",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DelimitedForHWM",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-21T09:59:45Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LookupfOR EACH TABLE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT DISTINCT \r\n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''), CHAR(10), '')) AS CountryRegion, \r\n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, 'yyyy-MM'), CHAR(13), ''), CHAR(10), '')) AS MONTHFOLDER\r\nFROM SalesLT.SalesOrderHeader H\r\nJOIN SalesLT.CustomerAddress CA ON CA.CustomerID = H.CustomerID\r\nJOIN SalesLT.Address A ON A.AddressID = CA.AddressID\r\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlTB",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LookupfOR EACH TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LookupfOR EACH TABLE').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT \n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER,\n    H.SalesOrderID,\n    H.CustomerID\nFROM SalesLT.SalesOrderHeader AS H\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@item().MONTHFOLDER\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '.csv')\r\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Copy data1_orderscsv",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT DISTINCT \n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''''), CHAR(10), '''')) AS CountryRegion, \n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, ''yyyy-MM''), CHAR(13), ''''), CHAR(10), '''')) AS MONTHFOLDER,\n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_orders.csv')\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Copy data1_order_detailscsv",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat('\nSELECT DISTINCT \n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID,\n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureSqlTB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "landingcsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"folder": {
+													"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_ordersDetails.csv')\n\n",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"SCHEMA": {
+						"type": "string"
+					},
+					"TABLE": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-10-25T14:27:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/landingcsv')]"
+			]
+		}
+	]
+}

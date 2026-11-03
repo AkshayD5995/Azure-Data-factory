@@ -1,0 +1,272 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DeshmukhFactory"
+		},
+		"ADLS_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS'"
+		},
+		"ADLS_LS_HEALTHCARE_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS_HEALTHCARE'"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorage1'"
+		},
+		"AzureSqlDatabase1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabase1'"
+		},
+		"AzureSqlDatabaseforincreamental_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDatabaseforincreamental'"
+		},
+		"LS_SQLDB_SRC_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQLDB_SRC'"
+		},
+		"SQL_ls_HEALTHCARE_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SQL_ls_HEALTHCARE'"
+		},
+		"azureDB_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'azureDB'"
+		},
+		"healthcare_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'healthcare'"
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://practise.dfs.core.windows.net/"
+		},
+		"ADLS_LS_HEALTHCARE_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://projecthealthcare.dfs.core.windows.net/"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://eatsstorage1.dfs.core.windows.net/"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azuredbserverdb.database.windows.net"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "db_practise"
+		},
+		"AzureSqlDatabase1_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshu"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "eatsuber.database.windows.net"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "uber"
+		},
+		"AzureSqlDatabaseforincreamental_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "CloudSA94fab8ec"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "eatsuber.database.windows.net"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "uber"
+		},
+		"LS_SQLDB_SRC_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "CloudSA94fab8ec"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().database}"
+		},
+		"SQL_ls_HEALTHCARE_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		},
+		"azureDB_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"azureDB_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "healthA"
+		},
+		"azureDB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		},
+		"healthcare_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "serverhealth.database.windows.net"
+		},
+		"healthcare_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().DBName}"
+		},
+		"healthcare_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "akshay"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "DeshmukhFactory_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"ADLS_LS_accountKey": {
+						"value": "[parameters('ADLS_LS_accountKey')]"
+					},
+					"ADLS_LS_HEALTHCARE_accountKey": {
+						"value": "[parameters('ADLS_LS_HEALTHCARE_accountKey')]"
+					},
+					"AzureDataLakeStorage1_accountKey": {
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					},
+					"AzureSqlDatabase1_password": {
+						"value": "[parameters('AzureSqlDatabase1_password')]"
+					},
+					"AzureSqlDatabaseforincreamental_password": {
+						"value": "[parameters('AzureSqlDatabaseforincreamental_password')]"
+					},
+					"LS_SQLDB_SRC_password": {
+						"value": "[parameters('LS_SQLDB_SRC_password')]"
+					},
+					"SQL_ls_HEALTHCARE_password": {
+						"value": "[parameters('SQL_ls_HEALTHCARE_password')]"
+					},
+					"azureDB_password": {
+						"value": "[parameters('azureDB_password')]"
+					},
+					"healthcare_password": {
+						"value": "[parameters('healthcare_password')]"
+					},
+					"ADLS_LS_properties_typeProperties_url": {
+						"value": "[parameters('ADLS_LS_properties_typeProperties_url')]"
+					},
+					"ADLS_LS_HEALTHCARE_properties_typeProperties_url": {
+						"value": "[parameters('ADLS_LS_HEALTHCARE_properties_typeProperties_url')]"
+					},
+					"AzureDataLakeStorage1_properties_typeProperties_url": {
+						"value": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+					},
+					"AzureSqlDatabase1_properties_typeProperties_server": {
+						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_server')]"
+					},
+					"AzureSqlDatabase1_properties_typeProperties_database": {
+						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_database')]"
+					},
+					"AzureSqlDatabase1_properties_typeProperties_userName": {
+						"value": "[parameters('AzureSqlDatabase1_properties_typeProperties_userName')]"
+					},
+					"AzureSqlDatabaseforincreamental_properties_typeProperties_server": {
+						"value": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_server')]"
+					},
+					"AzureSqlDatabaseforincreamental_properties_typeProperties_database": {
+						"value": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_database')]"
+					},
+					"AzureSqlDatabaseforincreamental_properties_typeProperties_userName": {
+						"value": "[parameters('AzureSqlDatabaseforincreamental_properties_typeProperties_userName')]"
+					},
+					"LS_SQLDB_SRC_properties_typeProperties_server": {
+						"value": "[parameters('LS_SQLDB_SRC_properties_typeProperties_server')]"
+					},
+					"LS_SQLDB_SRC_properties_typeProperties_database": {
+						"value": "[parameters('LS_SQLDB_SRC_properties_typeProperties_database')]"
+					},
+					"LS_SQLDB_SRC_properties_typeProperties_userName": {
+						"value": "[parameters('LS_SQLDB_SRC_properties_typeProperties_userName')]"
+					},
+					"SQL_ls_HEALTHCARE_properties_typeProperties_server": {
+						"value": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_server')]"
+					},
+					"SQL_ls_HEALTHCARE_properties_typeProperties_database": {
+						"value": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_database')]"
+					},
+					"SQL_ls_HEALTHCARE_properties_typeProperties_userName": {
+						"value": "[parameters('SQL_ls_HEALTHCARE_properties_typeProperties_userName')]"
+					},
+					"azureDB_properties_typeProperties_server": {
+						"value": "[parameters('azureDB_properties_typeProperties_server')]"
+					},
+					"azureDB_properties_typeProperties_database": {
+						"value": "[parameters('azureDB_properties_typeProperties_database')]"
+					},
+					"azureDB_properties_typeProperties_userName": {
+						"value": "[parameters('azureDB_properties_typeProperties_userName')]"
+					},
+					"healthcare_properties_typeProperties_server": {
+						"value": "[parameters('healthcare_properties_typeProperties_server')]"
+					},
+					"healthcare_properties_typeProperties_database": {
+						"value": "[parameters('healthcare_properties_typeProperties_database')]"
+					},
+					"healthcare_properties_typeProperties_userName": {
+						"value": "[parameters('healthcare_properties_typeProperties_userName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "DeshmukhFactory_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'DeshmukhFactory_ArmTemplate_0')]"
+			]
+		}
+	]
+}
