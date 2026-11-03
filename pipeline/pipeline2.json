@@ -42,7 +42,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('LookupfOR EACH TABLE').output.value",
+						"value": "@activity('Lookup FOR EACH TABLE').output.value",
 						"type": "Expression"
 					},
 					"activities": [
