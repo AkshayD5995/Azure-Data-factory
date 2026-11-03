@@ -1,0 +1,263 @@
+{
+	"name": "pipeline2",
+	"properties": {
+		"activities": [
+			{
+				"name": "LookupfOR EACH TABLE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT DISTINCT \r\n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''), CHAR(10), '')) AS CountryRegion, \r\n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, 'yyyy-MM'), CHAR(13), ''), CHAR(10), '')) AS MONTHFOLDER\r\nFROM SalesLT.SalesOrderHeader H\r\nJOIN SalesLT.CustomerAddress CA ON CA.CustomerID = H.CustomerID\r\nJOIN SalesLT.Address A ON A.AddressID = CA.AddressID\r\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTB",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LookupfOR EACH TABLE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LookupfOR EACH TABLE').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('\nSELECT \n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER,\n    H.SalesOrderID,\n    H.CustomerID\nFROM SalesLT.SalesOrderHeader AS H\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "AzureSqlTB",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "landingcsv",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder": {
+											"value": "@item().MONTHFOLDER\n",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@concat(item().CountryRegion, '.csv')\r\n",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Copy data1_orderscsv",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('\nSELECT DISTINCT \n    TRIM(REPLACE(REPLACE(A.CountryRegion, CHAR(13), ''''), CHAR(10), '''')) AS CountryRegion, \n    TRIM(REPLACE(REPLACE(FORMAT(H.OrderDate, ''yyyy-MM''), CHAR(13), ''''), CHAR(10), '''')) AS MONTHFOLDER,\n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "AzureSqlTB",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "landingcsv",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder": {
+											"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n\n",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_orders.csv')\n",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Copy data1_order_detailscsv",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('\nSELECT DISTINCT \n    d.SalesOrderID,\n    d.SalesOrderDetailID,\n    d.ProductID,\n    A.CountryRegion, \n    FORMAT(H.OrderDate, ''yyyy-MM'') AS MONTHFOLDER\nFROM SalesLT.SalesOrderDetail AS d\nJOIN SalesLT.SalesOrderHeader AS H ON H.SalesOrderID = d.SalesOrderID\nJOIN SalesLT.CustomerAddress AS CA ON CA.CustomerID = H.CustomerID\nJOIN SalesLT.Address AS A ON A.AddressID = CA.AddressID\nWHERE A.CountryRegion = ''', item().CountryRegion, ''' \n  AND FORMAT(H.OrderDate, ''yyyy-MM'') = ''', item().MONTHFOLDER, '''\n')\n",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "AzureSqlTB",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "landingcsv",
+									"type": "DatasetReference",
+									"parameters": {
+										"folder": {
+											"value": "@concat(item().CountryRegion, '/', item().MONTHFOLDER)\n",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@concat(item().CountryRegion, '_', item().MONTHFOLDER, '_ordersDetails.csv')\n\n",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"SCHEMA": {
+				"type": "string"
+			},
+			"TABLE": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-25T14:27:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

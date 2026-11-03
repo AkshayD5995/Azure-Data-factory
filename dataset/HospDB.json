@@ -1,0 +1,13 @@
+{
+	"name": "HospDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQL_ls_HEALTHCARE",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

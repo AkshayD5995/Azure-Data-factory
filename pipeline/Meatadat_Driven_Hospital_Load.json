@@ -1,0 +1,147 @@
+{
+	"name": "Meatadat_Driven_Hospital_Load",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get_Hospital_Config",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "\n SELECT HospitalName, ContainerName, FolderPath, FileName, DatabaseName, SchemaName, TableName\nFROM dbo.HospitalFileConfig\nWHERE IsActive = 1\n  AND HospitalName = '@{pipeline().parameters.hospital}'\nORDER BY LoadOrder",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "healthcare_datset_forlookup",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get_Hospital_Config",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_Hospital_Config').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "sourseCSV",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"fileName": {
+											"value": "@item().FileName",
+											"type": "Expression"
+										},
+										"folderpath": {
+											"value": "@item().FolderPath",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "landingDB",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema": {
+											"value": "@item().Schemaname",
+											"type": "Expression"
+										},
+										"table": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
+										"database": {
+											"value": "@item().DatabaseName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"hospital": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-26T11:46:17Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,13 @@
+{
+	"name": "healthcare_datset_forlookup",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "healthcare",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
