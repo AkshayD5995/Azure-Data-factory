@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "LookupfOR EACH TABLE",
+				"name": "Lookup FOR EACH TABLE",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -33,7 +33,7 @@
 				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "LookupfOR EACH TABLE",
+						"activity": "Lookup FOR EACH TABLE",
 						"dependencyConditions": [
 							"Succeeded"
 						]
